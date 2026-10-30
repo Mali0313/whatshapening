@@ -31,6 +31,13 @@ export default function SignupPage() {
     }
 
     try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || supabaseUrl.includes('[paste')) {
+        setErrorMsg('Supabase environment variables are missing on Vercel. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel Project Settings, then Redeploy.');
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -60,7 +67,11 @@ export default function SignupPage() {
         );
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred during signup.');
+      if (err instanceof Error && err.message.toLowerCase().includes('failed to fetch')) {
+        setErrorMsg('Connection failed (Failed to fetch). Please ensure NEXT_PUBLIC_SUPABASE_URL is added in Vercel and the project is redeployed.');
+      } else {
+        setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred during signup.');
+      }
     } finally {
       setLoading(false);
     }
